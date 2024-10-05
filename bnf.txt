@@ -1,0 +1,43 @@
+<program> -> <stmts>
+
+<stmts> -> (<stmt>; | <conditional>) | <stmt> ; <stmts>
+
+<stmt> -> <typeDeclaration> <var> = <expr> | <var> = <expr> | <method>
+
+<var> -> <identifier>
+
+<identifier> -> <alpha & underscore> | {<alphanumberic & underscore>}
+
+<scope> -> {<stmts>}
+
+<typeDeclaration> -> string | int
+
+<method> -> <identifier>(<expr>)
+
+<mathOperator> -> + | - | / | * | %
+
+<boolOperator> -> == | && | || | ! | != 
+
+<operator> -> <mathOperator> | <boolOperator>
+
+<numExpr> -> <term> {<mathOperator> <term>} | <term>
+
+<boolExpr> -> <term> {<boolOperator> <term>} | <term>
+
+<expr> -> <term> {<operator> <term>} | <term>
+
+<term> -> <var> | const | <str> | <method> | <bool>
+
+<bool> -> True | False
+
+<str> -> "{<char>}"
+
+<while> -> while(<boolExpr>) <scope>
+
+<for> -> for(<stmt>;<boolExpr>;<stmt>) <scope>
+
+<loop> -> <while> | <for>
+
+<if> -> if(<boolExpr>) <scope>
+
+<conditional> = <loop> | <if>
