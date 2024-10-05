@@ -1,10 +1,14 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
+    private final Map<String, Object[]> varMap;
 
     public Parser(ArrayList<String> program){
         this.lexicalAnalyzer = new LexicalAnalyzer(program);
+        this.varMap = new HashMap<>();
     }
 
     public void run() throws Exception {
@@ -69,6 +73,7 @@ public class Parser {
         return lexeme.toString();
     }
 
+    //TODO: Do after term
     public String expression() throws Exception{
         lexicalAnalyzer.lex();
         CharClass tokenType = lexicalAnalyzer.getTokenType();
@@ -77,5 +82,13 @@ public class Parser {
 
 
         return "";
+    }
+
+    public Object term() throws Exception{
+        lexicalAnalyzer.lex();
+        CharClass tokenType = lexicalAnalyzer.getTokenType();
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+
+        return new Object();
     }
 }
