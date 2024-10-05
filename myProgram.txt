@@ -1,0 +1,7 @@
+print("hi i like to wasd");
+print("    wubb  abbo o  ");
+print("");
+
+
+
+   print   (  "waiughug ;;aho801716)(*!^&&#( "  )  ;
