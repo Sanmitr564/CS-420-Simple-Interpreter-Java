@@ -12,7 +12,7 @@ public class Interpreter {
 
         ArrayList<String> program = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader("src/" + fileName))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             while (br.ready()) {
                 program.add(br.readLine());
             }
