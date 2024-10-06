@@ -26,8 +26,8 @@
 
 <expr> -> <term> {<operator> <term>} | <term>
 
-<term> -> <var> | const | <str> | <method> | <bool>
-
+<term> -> intLit | <str> | <var> | <method> | <bool>
+                            -------<identifier>-------
 <bool> -> True | False
 
 <str> -> "{<char>}"
