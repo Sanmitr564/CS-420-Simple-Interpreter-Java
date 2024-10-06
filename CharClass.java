@@ -1,3 +1,5 @@
+import java.util.EnumSet;
+
 public enum CharClass {
     UNKNOWN{
         public boolean isType(char c){ return false; }
@@ -10,7 +12,10 @@ public enum CharClass {
     },
     WHITESPACE{
         public boolean isType(char c){ return Character.isWhitespace(c); }
-    };
+    },
+    DOUBLE_QUOTE{ public boolean isType(char c) { return c == '"'; }};
+
+    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE);
 
     abstract public boolean isType(char c);
 
@@ -24,6 +29,13 @@ public enum CharClass {
         if(Character.isWhitespace(c)){
             return WHITESPACE;
         }
+        if(c == '"'){
+            return DOUBLE_QUOTE;
+        }
         return UNKNOWN;
+    }
+
+    public boolean isSingle(){
+        return singles.contains(this);
     }
 }
