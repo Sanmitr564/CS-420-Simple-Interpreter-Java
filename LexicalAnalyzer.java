@@ -24,7 +24,7 @@ public class LexicalAnalyzer {
         }
         tokenType = charClass;
 
-        if(tokenType == CharClass.UNKNOWN){
+        if(tokenType.isSingle()){
             addChar();
             return;
         }
@@ -37,10 +37,10 @@ public class LexicalAnalyzer {
     }
 
     private void getChar() throws Exception {
-        if(program.size() == 0){
+        if(program.isEmpty()){
             throw new Exception("Invalid statement on line " + line);
         }
-        if(program.get(0).length() == 0){
+        if(program.get(0).isEmpty()){
             program.remove(0);
             line++;
             getChar();
