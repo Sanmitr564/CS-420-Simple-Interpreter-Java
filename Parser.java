@@ -39,12 +39,11 @@ public class Parser {
         Identifier identifier = identifier();
         IdentifierType identifierType = reservedIdentifiers.get(identifier);
         if(identifierType == IdentifierType.METHOD){//TODO: Generalize to all valid method calls
-            methodCall();
+            methodCall(identifier);
         }else if(identifierType == IdentifierType.TYPE_DECLARATION){
-            declareVar();
+            declareVar(identifier);
         }
 
-        lexicalAnalyzer.lex();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals(";")){
             throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLine());
@@ -121,7 +120,7 @@ public class Parser {
         throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLine());
     }
 
-    public void methodCall() throws Exception{
+    public void methodCall(Identifier identifier) throws Exception{ //TODO: Generalize
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
         if(!lexeme.equals("(")){
@@ -136,19 +135,26 @@ public class Parser {
         if(!lexeme.equals(")")){
             throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
         }
-
+        lexicalAnalyzer.lex();
         System.out.println(o.toString());
     }
 
-    public void declareVar() throws Exception {
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
+    public void declareVar(Identifier type) throws Exception {
+        if(lexicalAnalyzer.getTokenType() != CharClass.IDENTIFIER){
+            throw new Exception("Improper variable initialization on line " + lexicalAnalyzer.getLine());
+        }
         Identifier name = identifier();
-        Object var = switch (lexeme) {
-            case "string" -> str();
-            case "int" -> intLiteral();
-            case "bool" -> bool();
-            default -> throw new Exception("Unknown var type on line " + lexicalAnalyzer.getLine());
-        };
+
+        lexicalAnalyzer.lex();
+
+        Object var = expression();
+        if(type.equals("string") && !(var instanceof String)){
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+        }else if(type.equals("int") && !(var instanceof Integer)){
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+        }else if(type.equals("bool") && !(var instanceof Boolean)){
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+        }
         varMap.put(name, var);
         reservedIdentifiers.put(name, IdentifierType.VAR);
     }
