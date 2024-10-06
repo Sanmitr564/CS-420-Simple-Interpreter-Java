@@ -16,4 +16,9 @@ public class Identifier{
     public boolean equals(Object s){
         return this.identifier.equals(s.toString());
     }
+
+    @Override
+    public int hashCode(){
+        return identifier.hashCode();
+    }
 }
