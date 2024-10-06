@@ -21,28 +21,31 @@ public class Parser {
         lexicalAnalyzer.lex();
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
+
         if(tokenType != CharClass.IDENTIFIER){
             throw new Exception("Invalid statement on line " + lexicalAnalyzer.getLine());
         }
 
+        Identifier identifier = identifier();
+
         //TODO: Generalize to statement later
         if(lexeme.equals("print")){
-            lexicalAnalyzer.lex();
             lexeme = lexicalAnalyzer.getLexeme().strip();
 
             if(!lexeme.equals("(")){
                 throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
             }
 
-            String s = str();   //TODO: Replace with more general method call
-
             lexicalAnalyzer.lex();
+
+            Object o = expression();
+
             lexeme = lexicalAnalyzer.getLexeme().strip();
             if(!lexeme.equals(")")){
                 throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
             }
 
-            System.out.println(s);
+            System.out.println(o.toString());
         }
 
         lexicalAnalyzer.lex();
@@ -53,14 +56,8 @@ public class Parser {
     }
 
     public String str() throws Exception{
-        lexicalAnalyzer.lex();
-        StringBuilder lexeme = new StringBuilder(lexicalAnalyzer.getLexeme().strip());
 
-        if(!lexeme.toString().equals("\"")){
-            throw new Exception("Invalid string on line " + lexicalAnalyzer.getLine());
-        }
-
-        lexeme = new StringBuilder();
+        StringBuilder lexeme = new StringBuilder();
         lexicalAnalyzer.lex();
         String lex = lexicalAnalyzer.getLexeme();
 
@@ -70,25 +67,51 @@ public class Parser {
             lex = lexicalAnalyzer.getLexeme();
         }
 
+        if(lex.length() > 1){
+            lexeme.append(lex, 0, lex.length() - 1);
+        }
+
+        lexicalAnalyzer.lex();
         return lexeme.toString();
     }
 
-    //TODO: Do after term
-    public String expression() throws Exception{
-        lexicalAnalyzer.lex();
+    public Object expression() throws Exception{
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
+        Object resolvedExpression;
 
+        //TODO: Add mathematical and boolean operations
+        if(tokenType == CharClass.DOUBLE_QUOTE){
+            resolvedExpression = str();
+        }else if(tokenType == CharClass.IDENTIFIER){
+            resolvedExpression = identifier();
+        }else if(tokenType == CharClass.DIGIT){
+            resolvedExpression = intLiteral();
+        }else{
+            throw new Exception("Attempted to parse unimplemented expression on line " + lexicalAnalyzer.getLine());
+        }
 
-        return "";
+        return resolvedExpression;
     }
 
-    public Object term() throws Exception{
-        lexicalAnalyzer.lex();
+    public Integer intLiteral() throws Exception{
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
-        return new Object();
+        if(tokenType != CharClass.DIGIT){
+            throw new Exception("Fake integer on line " + lexicalAnalyzer.getLine());
+        }
+
+        lexicalAnalyzer.lex();
+
+        return Integer.parseInt(lexeme);
+    }
+
+    public Identifier identifier() throws Exception{
+        Identifier identifier = new Identifier(lexicalAnalyzer.getLexeme());
+        lexicalAnalyzer.lex();
+
+        return identifier;
     }
 }
