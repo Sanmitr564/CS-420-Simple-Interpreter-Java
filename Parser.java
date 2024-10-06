@@ -4,11 +4,22 @@ import java.util.Map;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
-    private final Map<String, Object[]> varMap;
+    private final Map<Identifier, Object> varMap;
+    private final Map<Identifier, IdentifierType> reservedIdentifiers;
 
     public Parser(ArrayList<String> program){
         this.lexicalAnalyzer = new LexicalAnalyzer(program);
         this.varMap = new HashMap<>();
+        this.reservedIdentifiers = new HashMap<>();
+        reservedIdentifiers.put(new Identifier("print"), IdentifierType.METHOD);
+        reservedIdentifiers.put(new Identifier("int"), IdentifierType.TYPE_DECLARATION);
+        reservedIdentifiers.put(new Identifier("string"), IdentifierType.TYPE_DECLARATION);
+        reservedIdentifiers.put(new Identifier("bool"), IdentifierType.TYPE_DECLARATION);
+        reservedIdentifiers.put(new Identifier("if"), IdentifierType.CONDITIONAL);
+        reservedIdentifiers.put(new Identifier("for"), IdentifierType.CONDITIONAL);
+        reservedIdentifiers.put(new Identifier("while"), IdentifierType.CONDITIONAL);
+        reservedIdentifiers.put(new Identifier("true"), IdentifierType.BOOLEAN);
+        reservedIdentifiers.put(new Identifier("false"), IdentifierType.BOOLEAN);
     }
 
     public void run() throws Exception {
@@ -26,9 +37,11 @@ public class Parser {
         }
 
         Identifier identifier = identifier();
-
-        if(identifier.equals("print")){//TODO: Generalize to all valid method calls
+        IdentifierType identifierType = reservedIdentifiers.get(identifier);
+        if(identifierType == IdentifierType.METHOD){//TODO: Generalize to all valid method calls
             methodCall();
+        }else if(identifierType == IdentifierType.TYPE_DECLARATION){
+            declareVar();
         }
 
         lexicalAnalyzer.lex();
@@ -98,6 +111,16 @@ public class Parser {
         return identifier;
     }
 
+    public Boolean bool() throws Exception{
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+        if(lexeme.equals("true")){
+            return true;
+        }else if(lexeme.equals("false")){
+            return false;
+        }
+        throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLine());
+    }
+
     public void methodCall() throws Exception{
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
@@ -115,5 +138,18 @@ public class Parser {
         }
 
         System.out.println(o.toString());
+    }
+
+    public void declareVar() throws Exception {
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+        Identifier name = identifier();
+        Object var = switch (lexeme) {
+            case "string" -> str();
+            case "int" -> intLiteral();
+            case "bool" -> bool();
+            default -> throw new Exception("Unknown var type on line " + lexicalAnalyzer.getLine());
+        };
+        varMap.put(name, var);
+        reservedIdentifiers.put(name, IdentifierType.VAR);
     }
 }
