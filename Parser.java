@@ -20,7 +20,6 @@ public class Parser {
     public void statements() throws Exception {
         lexicalAnalyzer.lex();
         CharClass tokenType = lexicalAnalyzer.getTokenType();
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
 
         if(tokenType != CharClass.IDENTIFIER){
             throw new Exception("Invalid statement on line " + lexicalAnalyzer.getLine());
@@ -28,28 +27,12 @@ public class Parser {
 
         Identifier identifier = identifier();
 
-        //TODO: Generalize to statement later
-        if(lexeme.equals("print")){
-            lexeme = lexicalAnalyzer.getLexeme().strip();
-
-            if(!lexeme.equals("(")){
-                throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
-            }
-
-            lexicalAnalyzer.lex();
-
-            Object o = expression();
-
-            lexeme = lexicalAnalyzer.getLexeme().strip();
-            if(!lexeme.equals(")")){
-                throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
-            }
-
-            System.out.println(o.toString());
+        if(identifier.equals("print")){//TODO: Generalize to all valid method calls
+            methodCall();
         }
 
         lexicalAnalyzer.lex();
-        lexeme = lexicalAnalyzer.getLexeme().strip();
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals(";")){
             throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLine());
         }
@@ -109,9 +92,28 @@ public class Parser {
     }
 
     public Identifier identifier() throws Exception{
-        Identifier identifier = new Identifier(lexicalAnalyzer.getLexeme());
+        Identifier identifier = new Identifier(lexicalAnalyzer.getLexeme().strip());
         lexicalAnalyzer.lex();
 
         return identifier;
+    }
+
+    public void methodCall() throws Exception{
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+
+        if(!lexeme.equals("(")){
+            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
+        }
+
+        lexicalAnalyzer.lex();
+
+        Object o = expression();
+
+        lexeme = lexicalAnalyzer.getLexeme().strip();
+        if(!lexeme.equals(")")){
+            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
+        }
+
+        System.out.println(o.toString());
     }
 }
