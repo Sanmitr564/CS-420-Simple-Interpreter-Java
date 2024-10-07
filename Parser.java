@@ -38,7 +38,7 @@ public class Parser {
 
         Identifier identifier = identifier();
         IdentifierType identifierType = reservedIdentifiers.get(identifier);
-        if(identifierType == IdentifierType.METHOD){//TODO: Generalize to all valid method calls
+        if(identifierType == IdentifierType.METHOD){
             methodCall(identifier);
         }else if(identifierType == IdentifierType.TYPE_DECLARATION){
             declareVar(identifier);
@@ -75,12 +75,20 @@ public class Parser {
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
-        Object resolvedExpression;
+        Object term = term();
 
         //TODO: Add mathematical and boolean operations
-        //TODO: Maybe pull out to new method term()
+
+
+        return term;
+    }
+
+    public Object term() throws Exception{
+        CharClass tokenType = lexicalAnalyzer.getTokenType();
+        Object resolvedTerm;
+
         if(tokenType == CharClass.DOUBLE_QUOTE){
-            resolvedExpression = str();
+            resolvedTerm = str();
         }else if(tokenType == CharClass.IDENTIFIER){
             Identifier identifier = identifier();
             if(!reservedIdentifiers.containsKey(identifier)){
@@ -88,9 +96,9 @@ public class Parser {
             }
             IdentifierType identifierType = reservedIdentifiers.get(identifier);
             if(identifierType == IdentifierType.VAR){
-                resolvedExpression = varMap.get(identifier);
+                resolvedTerm = varMap.get(identifier);
             }else if(identifierType == IdentifierType.BOOLEAN){
-                resolvedExpression = bool(identifier);
+                resolvedTerm = bool(identifier);
             }else if(identifierType == IdentifierType.METHOD){
                 throw new Exception("Methods as expression arguments not yet implemented on line " + lexicalAnalyzer.getLine());
             }else{
@@ -98,12 +106,11 @@ public class Parser {
             }
 
         }else if(tokenType == CharClass.DIGIT){
-            resolvedExpression = intLiteral();
+            resolvedTerm = intLiteral();
         }else{
             throw new Exception("Attempted to parse unimplemented expression on line " + lexicalAnalyzer.getLine());
         }
-
-        return resolvedExpression;
+        return resolvedTerm;
     }
 
     public Integer intLiteral() throws Exception{
