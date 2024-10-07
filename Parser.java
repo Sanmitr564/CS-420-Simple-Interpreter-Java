@@ -42,6 +42,8 @@ public class Parser {
             methodCall(identifier);
         }else if(identifierType == IdentifierType.TYPE_DECLARATION){
             declareVar(identifier);
+        }else if(identifierType == IdentifierType.VAR){
+            assignVar(identifier);
         }
 
         String lexeme = lexicalAnalyzer.getLexeme().strip();
@@ -162,6 +164,10 @@ public class Parser {
             throw new Exception("Tried to create variable from reserved identifier on line " + lexicalAnalyzer.getLine());
         }
 
+        if(!lexicalAnalyzer.getLexeme().strip().equals("=")){
+            throw new Exception("Must initialize variable on line " + lexicalAnalyzer.getLine());
+        }
+
         lexicalAnalyzer.lex();
 
         Object var = expression();
@@ -174,5 +180,21 @@ public class Parser {
         }
         varMap.put(name, var);
         reservedIdentifiers.put(name, IdentifierType.VAR);
+    }
+
+    public void assignVar(Identifier name) throws Exception{
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+        if(!lexeme.equals("=")){
+            throw new Exception("Improper variable assignment on line " + lexicalAnalyzer.getLine());
+        }
+
+        lexicalAnalyzer.lex();
+        Object var = expression();
+        if(!var.getClass().equals(varMap.get(name).getClass())){
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+        }
+
+        varMap.put(name, var);
+
     }
 }
