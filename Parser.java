@@ -51,7 +51,6 @@ public class Parser {
     }
 
     public String str() throws Exception{
-
         StringBuilder lexeme = new StringBuilder();
         lexicalAnalyzer.lex();
         String lex = lexicalAnalyzer.getLexeme();
@@ -77,10 +76,25 @@ public class Parser {
         Object resolvedExpression;
 
         //TODO: Add mathematical and boolean operations
+        //TODO: Maybe pull out to new method term()
         if(tokenType == CharClass.DOUBLE_QUOTE){
             resolvedExpression = str();
         }else if(tokenType == CharClass.IDENTIFIER){
-            resolvedExpression = identifier();
+            Identifier identifier = identifier();
+            if(!reservedIdentifiers.containsKey(identifier)){
+                throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLine());
+            }
+            IdentifierType identifierType = reservedIdentifiers.get(identifier);
+            if(identifierType == IdentifierType.VAR){
+                resolvedExpression = varMap.get(identifier);
+            }else if(identifierType == IdentifierType.BOOLEAN){
+                resolvedExpression = bool(identifier);
+            }else if(identifierType == IdentifierType.METHOD){
+                throw new Exception("Methods as expression arguments not yet implemented on line " + lexicalAnalyzer.getLine());
+            }else{
+                throw new Exception("Invalid identifier in expression on line " + lexicalAnalyzer.getLine());
+            }
+
         }else if(tokenType == CharClass.DIGIT){
             resolvedExpression = intLiteral();
         }else{
@@ -110,11 +124,10 @@ public class Parser {
         return identifier;
     }
 
-    public Boolean bool() throws Exception{
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(lexeme.equals("true")){
+    public Boolean bool(Identifier identifier) throws Exception{
+        if(identifier.equals("true")){
             return true;
-        }else if(lexeme.equals("false")){
+        }else if(identifier.equals("false")){
             return false;
         }
         throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLine());
@@ -144,6 +157,10 @@ public class Parser {
             throw new Exception("Improper variable initialization on line " + lexicalAnalyzer.getLine());
         }
         Identifier name = identifier();
+
+        if(reservedIdentifiers.containsKey(name)){
+            throw new Exception("Tried to create variable from reserved identifier on line " + lexicalAnalyzer.getLine());
+        }
 
         lexicalAnalyzer.lex();
 
