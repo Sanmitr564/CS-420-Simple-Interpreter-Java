@@ -31,7 +31,7 @@ public class Parser {
         CharClass tokenType = lexicalAnalyzer.getTokenType();
 
         if(tokenType != CharClass.IDENTIFIER){
-            throw new Exception("Invalid statement on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Invalid statement on line " + lexicalAnalyzer.getLineIndex());
         }
 
         Identifier identifier = identifier();
@@ -46,7 +46,7 @@ public class Parser {
 
         String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals(";")){
-            throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLineIndex());
         }
     }
 
@@ -93,7 +93,7 @@ public class Parser {
             if(tokenType.isOperator()){
                 int precedence = OperatorEvaluationMap.map.get(lexeme).precedence();
                 while(!operatorStack.isEmpty() && !operatorStack.peek().equals("(") && precedence < OperatorEvaluationMap.map.get(operatorStack.peek()).precedence()) {
-                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
+                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLineIndex()));
                 }
 
                 lexicalAnalyzer.lex();
@@ -107,10 +107,10 @@ public class Parser {
                     break;
                 }
                 if(operatorStack.peek().equals("(")){
-                    throw new Exception("Empty sub expression on line " + lexicalAnalyzer.getLine());
+                    throw new Exception("Empty sub expression on line " + lexicalAnalyzer.getLineIndex());
                 }
                 while(!operatorStack.peek().equals("(")){
-                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
+                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLineIndex()));
                 }
                 operatorStack.pop();
                 lexicalAnalyzer.lex();
@@ -122,13 +122,13 @@ public class Parser {
         while(!operatorStack.isEmpty()){
             String operator = operatorStack.pop();
             if(operator.equals("(")){
-                throw new Exception("Improper expression on line " + lexicalAnalyzer.getLine());
+                throw new Exception("Improper expression on line " + lexicalAnalyzer.getLineIndex());
             }
-            outputStack.push(OperatorEvaluationMap.map.get(operator).evaluate(outputStack, lexicalAnalyzer.getLine()));
+            outputStack.push(OperatorEvaluationMap.map.get(operator).evaluate(outputStack, lexicalAnalyzer.getLineIndex()));
         }
 
         if(outputStack.size() != 1){
-            throw new Exception("Improper expression on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Improper expression on line " + lexicalAnalyzer.getLineIndex());
         }
 
         return outputStack.pop();
@@ -143,7 +143,7 @@ public class Parser {
         }else if(tokenType == CharClass.IDENTIFIER){
             Identifier identifier = identifier();
             if(!reservedIdentifiers.containsKey(identifier)){
-                throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLine());
+                throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLineIndex());
             }
             IdentifierType identifierType = reservedIdentifiers.get(identifier);
             if(identifierType == IdentifierType.VAR){
@@ -151,15 +151,15 @@ public class Parser {
             }else if(identifierType == IdentifierType.BOOLEAN){
                 resolvedTerm = bool(identifier);
             }else if(identifierType == IdentifierType.METHOD){
-                throw new Exception("Methods as expression arguments not yet implemented on line " + lexicalAnalyzer.getLine());
+                throw new Exception("Methods as expression arguments not yet implemented on line " + lexicalAnalyzer.getLineIndex());
             }else{
-                throw new Exception("Invalid identifier in expression on line " + lexicalAnalyzer.getLine());
+                throw new Exception("Invalid identifier in expression on line " + lexicalAnalyzer.getLineIndex());
             }
 
         }else if(tokenType == CharClass.DIGIT){
             resolvedTerm = intLiteral();
         }else{
-            throw new Exception("Attempted to parse unimplemented expression on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Attempted to parse unimplemented expression on line " + lexicalAnalyzer.getLineIndex());
         }
         return resolvedTerm;
     }
@@ -169,7 +169,7 @@ public class Parser {
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
         if(tokenType != CharClass.DIGIT){
-            throw new Exception("Fake integer on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Fake integer on line " + lexicalAnalyzer.getLineIndex());
         }
 
         lexicalAnalyzer.lex();
@@ -190,14 +190,14 @@ public class Parser {
         }else if(identifier.equals("false")){
             return false;
         }
-        throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLine());
+        throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLineIndex());
     }
 
     public void methodCall(Identifier identifier) throws Exception{ //TODO: Generalize
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
         if(!lexeme.equals("(")){
-            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLineIndex());
         }
 
         lexicalAnalyzer.lex();
@@ -206,7 +206,7 @@ public class Parser {
 
         lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals(")")){
-            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Invalid method call on line " + lexicalAnalyzer.getLineIndex());
         }
         lexicalAnalyzer.lex();
         System.out.println(o.toString());
@@ -214,27 +214,27 @@ public class Parser {
 
     public void declareVar(Identifier type) throws Exception {
         if(lexicalAnalyzer.getTokenType() != CharClass.IDENTIFIER){
-            throw new Exception("Improper variable initialization on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Improper variable initialization on line " + lexicalAnalyzer.getLineIndex());
         }
         Identifier name = identifier();
 
         if(reservedIdentifiers.containsKey(name)){
-            throw new Exception("Tried to create variable from reserved identifier on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Tried to create variable from reserved identifier on line " + lexicalAnalyzer.getLineIndex());
         }
 
         if(!lexicalAnalyzer.getLexeme().strip().equals("=")){
-            throw new Exception("Must initialize variable on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Must initialize variable on line " + lexicalAnalyzer.getLineIndex());
         }
 
         lexicalAnalyzer.lex();
 
         Object var = expression();
         if(type.equals("string") && !(var instanceof String)){
-            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLineIndex());
         }else if(type.equals("int") && !(var instanceof Integer)){
-            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLineIndex());
         }else if(type.equals("bool") && !(var instanceof Boolean)){
-            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLineIndex());
         }
         varMap.put(name, var);
         reservedIdentifiers.put(name, IdentifierType.VAR);
@@ -243,13 +243,13 @@ public class Parser {
     public void assignVar(Identifier name) throws Exception{
         String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals("=")){
-            throw new Exception("Improper variable assignment on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Improper variable assignment on line " + lexicalAnalyzer.getLineIndex());
         }
 
         lexicalAnalyzer.lex();
         Object var = expression();
         if(!var.getClass().equals(varMap.get(name).getClass())){
-            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLine());
+            throw new Exception("Mismatched types on line " + lexicalAnalyzer.getLineIndex());
         }
 
         varMap.put(name, var);
