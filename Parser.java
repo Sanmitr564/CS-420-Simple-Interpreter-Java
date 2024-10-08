@@ -72,15 +72,12 @@ public class Parser {
     public Object expression() throws Exception{
         Stack<String> operatorStack = new Stack<>();
         Stack<Object> outputStack = new Stack<>();
-        outputStack.push(term());
         int parenthesesInStack = 0;
 
         //Shunting yard algorithm
         while(true){
-
             String lexeme = lexicalAnalyzer.getLexeme().strip();
             CharClass tokenType = lexicalAnalyzer.getTokenType();
-
             if(tokenType.isTerm()){
                 outputStack.push(term());
                 continue;
@@ -94,7 +91,6 @@ public class Parser {
             }
 
             if(tokenType.isOperator()){
-
                 int precedence = OperatorEvaluationMap.map.get(lexeme).precedence();
                 while(!operatorStack.isEmpty() && !operatorStack.peek().equals("(") && precedence < OperatorEvaluationMap.map.get(operatorStack.peek()).precedence()) {
                     outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
@@ -106,6 +102,7 @@ public class Parser {
             }
 
             if(lexeme.equals(")")){
+
                 if(parenthesesInStack == 0){
                     break;
                 }
@@ -115,6 +112,9 @@ public class Parser {
                 while(!operatorStack.peek().equals("(")){
                     outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
                 }
+                operatorStack.pop();
+                lexicalAnalyzer.lex();
+                continue;
             }
             break;
         }
