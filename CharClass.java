@@ -19,11 +19,14 @@ public enum CharClass {
     }},
     BOOL_OPERATOR{ public boolean isType(char c){
         return c == '=' || c == '&' || c == '|' || c == '!';
-    }};
+    }},
+    GENERIC_OPERATOR { public boolean isType(char c){ return c == '(' || c == ')'; }};
 
-    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE, MATH_OPERATOR);
+    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE, MATH_OPERATOR, GENERIC_OPERATOR);
 
-    public static final EnumSet<CharClass> operators = EnumSet.of(MATH_OPERATOR, BOOL_OPERATOR);
+    public static final EnumSet<CharClass> operators = EnumSet.of(MATH_OPERATOR, BOOL_OPERATOR, GENERIC_OPERATOR);
+
+    public static final EnumSet<CharClass> terms = EnumSet.of(DIGIT, DOUBLE_QUOTE, IDENTIFIER);
 
     abstract public boolean isType(char c);
 
@@ -37,8 +40,17 @@ public enum CharClass {
         if(Character.isWhitespace(c)){
             return WHITESPACE;
         }
-        if(c == '"'){
+        if(DOUBLE_QUOTE.isType(c)){
             return DOUBLE_QUOTE;
+        }
+        if(MATH_OPERATOR.isType(c)){
+            return MATH_OPERATOR;
+        }
+        if(BOOL_OPERATOR.isType(c)){
+            return BOOL_OPERATOR;
+        }
+        if(c == '('){
+            return GENERIC_OPERATOR;
         }
         return UNKNOWN;
     }
@@ -48,4 +60,6 @@ public enum CharClass {
     }
 
     public boolean isOperator() { return operators.contains(this); }
+
+    public boolean isTerm() { return terms.contains(this); }
 }
