@@ -13,9 +13,17 @@ public enum CharClass {
     WHITESPACE{
         public boolean isType(char c){ return Character.isWhitespace(c); }
     },
-    DOUBLE_QUOTE{ public boolean isType(char c) { return c == '"'; }};
+    DOUBLE_QUOTE{ public boolean isType(char c) { return c == '"'; }},
+    MATH_OPERATOR{ public boolean isType(char c) {
+        return c == '+' || c == '-' || c == '/' || c == '*' || c == '%';
+    }},
+    BOOL_OPERATOR{ public boolean isType(char c){
+        return c == '=' || c == '&' || c == '|' || c == '!';
+    }};
 
-    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE);
+    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE, MATH_OPERATOR);
+
+    public static final EnumSet<CharClass> operators = EnumSet.of(MATH_OPERATOR, BOOL_OPERATOR);
 
     abstract public boolean isType(char c);
 
@@ -38,4 +46,6 @@ public enum CharClass {
     public boolean isSingle(){
         return singles.contains(this);
     }
+
+    public boolean isOperator() { return operators.contains(this); }
 }
