@@ -6,12 +6,14 @@ public class LexicalAnalyzer {
     private CharClass charClass;
     private CharClass tokenType;
     private String lexeme;
-    private int line;
+    private int lineIndex;
+    private int charIndex;
 
 
     public LexicalAnalyzer(ArrayList<String> program){
         this.program = program;
-        line = 1;
+        lineIndex = 0;
+        charIndex = 0;
     }
 
     public void lex() throws Exception{
@@ -38,27 +40,27 @@ public class LexicalAnalyzer {
 
     private void getChar() throws Exception {
         if(program.isEmpty()){
-            throw new Exception("Invalid statement on line " + line);
+            throw new Exception("Invalid statement on line " + lineIndex);
         }
-        if(program.get(0).isEmpty()){
-            program.remove(0);
-            line++;
+        if(program.get(lineIndex).length() == charIndex){
+            lineIndex++;
+            charIndex = 0;
             getChar();
         }
 
-        String s = program.get(0);
-        nextChar = s.charAt(0);
+        String s = program.get(lineIndex);
+        nextChar = s.charAt(charIndex);
         charClass = CharClass.firstCharType(nextChar);
     }
 
     private void addChar(){
         lexeme += nextChar;
-        String s = program.get(0);
-        if(s.length() == 1){
-            program.remove(0);
-            line++;
+        String s = program.get(lineIndex);
+        if(s.length() == charIndex){
+            lineIndex++;
+            charIndex = 0;
         }else{
-            program.set(0, s.substring(1));
+            charIndex++;
         }
     }
 
@@ -70,9 +72,14 @@ public class LexicalAnalyzer {
         return tokenType;
     }
 
-    public int getLine(){ return line; }
+    public int getLineIndex(){ return lineIndex; }
 
     public boolean isEmpty(){
-        return program.isEmpty();
+        return lineIndex == program.size() - 1 && charIndex == program.get(program.size() - 1).length();
+    }
+
+    public void goTo(int line, int charIndex){
+        this.lineIndex = line;
+        this.charIndex = charIndex;
     }
 }
