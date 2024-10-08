@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
@@ -72,15 +70,68 @@ public class Parser {
     }
 
     public Object expression() throws Exception{
-        CharClass tokenType = lexicalAnalyzer.getTokenType();
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
+        Stack<String> operatorStack = new Stack<>();
+        Stack<Object> outputStack = new Stack<>();
+        outputStack.push(term());
+        int parenthesesInStack = 0;
 
-        Object term = term();
+        //Shunting yard algorithm
+        while(true){
 
-        //TODO: Add mathematical and boolean operations
+            String lexeme = lexicalAnalyzer.getLexeme().strip();
+            CharClass tokenType = lexicalAnalyzer.getTokenType();
 
+            if(tokenType.isTerm()){
+                outputStack.push(term());
+                continue;
+            }
 
-        return term;
+            if(lexeme.equals("(")){
+                parenthesesInStack++;
+                operatorStack.push(lexeme);
+                lexicalAnalyzer.lex();
+                continue;
+            }
+
+            if(tokenType.isOperator()){
+
+                int precedence = OperatorEvaluationMap.map.get(lexeme).precedence();
+                while(!operatorStack.isEmpty() && !operatorStack.peek().equals("(") && precedence < OperatorEvaluationMap.map.get(operatorStack.peek()).precedence()) {
+                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
+                }
+
+                lexicalAnalyzer.lex();
+                operatorStack.push(lexeme);
+                continue;
+            }
+
+            if(lexeme.equals(")")){
+                if(parenthesesInStack == 0){
+                    break;
+                }
+                if(operatorStack.peek().equals("(")){
+                    throw new Exception("Empty sub expression on line " + lexicalAnalyzer.getLine());
+                }
+                while(!operatorStack.peek().equals("(")){
+                    outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLine()));
+                }
+            }
+            break;
+        }
+
+        while(!operatorStack.isEmpty()){
+            String operator = operatorStack.pop();
+            if(operator.equals("(")){
+                throw new Exception("Improper expression on line " + lexicalAnalyzer.getLine());
+            }
+            outputStack.push(OperatorEvaluationMap.map.get(operator).evaluate(outputStack, lexicalAnalyzer.getLine()));
+        }
+
+        if(outputStack.size() != 1){
+            throw new Exception("Improper expression on line " + lexicalAnalyzer.getLine());
+        }
+
+        return outputStack.pop();
     }
 
     public Object term() throws Exception{
