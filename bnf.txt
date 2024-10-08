@@ -16,7 +16,7 @@
 
 <mathOperator> -> + | - | / | * | %
 
-<boolOperator> -> == | && | || | ! | != 
+<boolOperator> -> == | && | || | ! | != | > | >= | < | <=
 
 <operator> -> <mathOperator> | <boolOperator>
 
@@ -27,7 +27,7 @@
 <expr> -> <term> {<operator> <term>} | <term>
 
 <term> -> intLit | <str> | <var> | <method> | <bool>
-                            -------<identifier>-------
+                          -------<identifier>-------
 <bool> -> True | False
 
 <str> -> "{<char>}"
@@ -41,3 +41,16 @@
 <if> -> if(<boolExpr>) <scope>
 
 <conditional> = <loop> | <if>
+
+/////////////////////////
+Notes
+
+operator precedence{
+    0:  ||
+    1.  &&
+    2.  ==, !=
+    3.  >, >=, <, <=
+    4.  +, -
+    5.  *, /, %
+    6.  !
+}
