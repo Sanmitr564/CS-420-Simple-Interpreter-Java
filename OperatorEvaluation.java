@@ -49,7 +49,7 @@ class Multiplication implements OperatorEvaluation{
         if(!(x instanceof Integer) || !(y instanceof Integer)){
             throw new Exception("Attempted to multiply incompatible types " + x.getClass() + " and " + y.getClass() + " on line " + line);
         }
-        return (Integer) x + (Integer) y;
+        return (Integer) x * (Integer) y;
     }
 
     @Override
