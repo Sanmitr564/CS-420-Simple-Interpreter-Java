@@ -13,11 +13,13 @@ public class Parser {
         reservedIdentifiers.put(new Identifier("int"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("string"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("bool"), IdentifierType.TYPE_DECLARATION);
-        reservedIdentifiers.put(new Identifier("if"), IdentifierType.CONDITIONAL);
-        reservedIdentifiers.put(new Identifier("for"), IdentifierType.CONDITIONAL);
-        reservedIdentifiers.put(new Identifier("while"), IdentifierType.CONDITIONAL);
+        reservedIdentifiers.put(new Identifier("if"), IdentifierType.IF);
+        reservedIdentifiers.put(new Identifier("for"), IdentifierType.FOR);
+        reservedIdentifiers.put(new Identifier("while"), IdentifierType.WHILE);
         reservedIdentifiers.put(new Identifier("true"), IdentifierType.BOOLEAN);
         reservedIdentifiers.put(new Identifier("false"), IdentifierType.BOOLEAN);
+        reservedIdentifiers.put(new Identifier("elif"), IdentifierType.ELIF);
+        reservedIdentifiers.put(new Identifier("else"), IdentifierType.ELSE);
     }
 
     public void run() throws Exception {
@@ -26,7 +28,7 @@ public class Parser {
         }
     }
 
-    public void statements() throws Exception {
+    private void statements() throws Exception {
         lexicalAnalyzer.lex();
         CharClass tokenType = lexicalAnalyzer.getTokenType();
 
@@ -50,7 +52,7 @@ public class Parser {
         }
     }
 
-    public String str() throws Exception{
+    private String str() throws Exception{
         StringBuilder lexeme = new StringBuilder();
         lexicalAnalyzer.lex();
         String lex = lexicalAnalyzer.getLexeme();
@@ -69,7 +71,7 @@ public class Parser {
         return lexeme.toString();
     }
 
-    public Object expression() throws Exception{
+    private Object expression() throws Exception{
         Stack<String> operatorStack = new Stack<>();
         Stack<Object> outputStack = new Stack<>();
         int parenthesesInStack = 0;
@@ -112,6 +114,7 @@ public class Parser {
                 while(!operatorStack.peek().equals("(")){
                     outputStack.push(OperatorEvaluationMap.map.get(operatorStack.pop()).evaluate(outputStack, lexicalAnalyzer.getLineIndex()));
                 }
+                parenthesesInStack--;
                 operatorStack.pop();
                 lexicalAnalyzer.lex();
                 continue;
@@ -134,7 +137,7 @@ public class Parser {
         return outputStack.pop();
     }
 
-    public Object term() throws Exception{
+    private Object term() throws Exception{
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         Object resolvedTerm;
 
@@ -164,7 +167,7 @@ public class Parser {
         return resolvedTerm;
     }
 
-    public Integer intLiteral() throws Exception{
+    private Integer intLiteral() throws Exception{
         CharClass tokenType = lexicalAnalyzer.getTokenType();
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
@@ -177,14 +180,14 @@ public class Parser {
         return Integer.parseInt(lexeme);
     }
 
-    public Identifier identifier() throws Exception{
+    private Identifier identifier() throws Exception{
         Identifier identifier = new Identifier(lexicalAnalyzer.getLexeme().strip());
         lexicalAnalyzer.lex();
 
         return identifier;
     }
 
-    public Boolean bool(Identifier identifier) throws Exception{
+    private Boolean bool(Identifier identifier) throws Exception{
         if(identifier.equals("true")){
             return true;
         }else if(identifier.equals("false")){
@@ -193,7 +196,7 @@ public class Parser {
         throw new Exception("Tried to initialize invalid boolean on line " + lexicalAnalyzer.getLineIndex());
     }
 
-    public void methodCall(Identifier identifier) throws Exception{ //TODO: Generalize
+    private void methodCall(Identifier identifier) throws Exception{ //TODO: Generalize
         String lexeme = lexicalAnalyzer.getLexeme().strip();
 
         if(!lexeme.equals("(")){
@@ -212,7 +215,7 @@ public class Parser {
         System.out.println(o.toString());
     }
 
-    public void declareVar(Identifier type) throws Exception {
+    private void declareVar(Identifier type) throws Exception {
         if(lexicalAnalyzer.getTokenType() != CharClass.IDENTIFIER){
             throw new Exception("Improper variable initialization on line " + lexicalAnalyzer.getLineIndex());
         }
@@ -240,7 +243,7 @@ public class Parser {
         reservedIdentifiers.put(name, IdentifierType.VAR);
     }
 
-    public void assignVar(Identifier name) throws Exception{
+    private void assignVar(Identifier name) throws Exception{
         String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals("=")){
             throw new Exception("Improper variable assignment on line " + lexicalAnalyzer.getLineIndex());
@@ -254,5 +257,48 @@ public class Parser {
 
         varMap.put(name, var);
 
+    }
+
+    private void ifStatement() throws Exception{
+
+    }
+
+    private void skipChunk() throws Exception {
+
+        String lexeme = lexicalAnalyzer.getLexeme().strip();
+        CharClass tokenType = lexicalAnalyzer.getTokenType();
+
+        if(tokenType != CharClass.OPENER){
+            throw new Exception("Improper use of skipChunk on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        Stack<Character> closers = new Stack<>();
+        closers.push(getCloser(lexeme.charAt(0)));
+        lexicalAnalyzer.lex();
+
+        while(!closers.isEmpty()){
+            if(lexicalAnalyzer.getTokenType() == CharClass.DOUBLE_QUOTE){
+                str();
+                continue;
+            }else if(lexicalAnalyzer.getTokenType() == CharClass.OPENER){
+                closers.push(getCloser(lexicalAnalyzer.getLexeme().charAt(0)));
+            }else if(lexicalAnalyzer.getTokenType() == CharClass.CLOSER){
+                if(lexicalAnalyzer.getLexeme().charAt(0) != closers.peek()){
+                    throw new Exception("Improper expression on line " + lexicalAnalyzer.getLineIndex());
+                }
+                closers.pop();
+            }
+            lexicalAnalyzer.lex();
+        }
+    }
+
+    private char getCloser(char c) throws Exception{
+        String openers = "([{";
+        String closers = ")]}";
+        int charIndex = openers.indexOf(c);
+        if(charIndex != -1){
+            return closers.charAt(charIndex);
+        }
+        throw new Exception("Not an opener");
     }
 }
