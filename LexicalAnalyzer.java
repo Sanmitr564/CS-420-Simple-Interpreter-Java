@@ -78,6 +78,10 @@ public class LexicalAnalyzer {
         return lineIndex == program.size() - 1 && charIndex == program.get(program.size() - 1).length();
     }
 
+    public int getCharIndex(){
+        return charIndex;
+    }
+
     public void goTo(int line, int charIndex){
         this.lineIndex = line;
         this.charIndex = charIndex;
