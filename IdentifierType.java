@@ -2,6 +2,10 @@ public enum IdentifierType {
     TYPE_DECLARATION,
     VAR,
     METHOD,
-    CONDITIONAL,
+    IF,
+    ELIF,
+    ELSE,
+    FOR,
+    WHILE,
     BOOLEAN
 }
