@@ -10,9 +10,7 @@ public enum CharClass {
     DIGIT{
         public boolean isType(char c){ return Character.isDigit(c); }
     },
-    WHITESPACE{
-        public boolean isType(char c){ return Character.isWhitespace(c); }
-    },
+    WHITESPACE{ public boolean isType(char c){ return Character.isWhitespace(c); }},
     DOUBLE_QUOTE{ public boolean isType(char c) { return c == '"'; }},
     MATH_OPERATOR{ public boolean isType(char c) {
         return c == '+' || c == '-' || c == '/' || c == '*' || c == '%';
@@ -20,11 +18,16 @@ public enum CharClass {
     BOOL_OPERATOR{ public boolean isType(char c){
         return c == '=' || c == '&' || c == '|' || c == '!';
     }},
-    GENERIC_OPERATOR { public boolean isType(char c){ return c == '(' || c == ')'; }};
+    OPENER{
+        public boolean isType(char c) { return c == '(' || c == '{' || c == '['; }
+    },
+    CLOSER{
+        public boolean isType(char c) {return c == ')' || c == '}' || c == ']'; }
+    };
 
-    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN,DOUBLE_QUOTE, MATH_OPERATOR, GENERIC_OPERATOR);
+    public static final EnumSet<CharClass> singles = EnumSet.of(UNKNOWN, DOUBLE_QUOTE, MATH_OPERATOR, OPENER, CLOSER);
 
-    public static final EnumSet<CharClass> operators = EnumSet.of(MATH_OPERATOR, BOOL_OPERATOR, GENERIC_OPERATOR);
+    public static final EnumSet<CharClass> operators = EnumSet.of(MATH_OPERATOR, BOOL_OPERATOR);
 
     public static final EnumSet<CharClass> terms = EnumSet.of(DIGIT, DOUBLE_QUOTE, IDENTIFIER);
 
@@ -49,9 +52,13 @@ public enum CharClass {
         if(BOOL_OPERATOR.isType(c)){
             return BOOL_OPERATOR;
         }
-        if(c == '('){
-            return GENERIC_OPERATOR;
+        if(OPENER.isType(c)){
+            return OPENER;
         }
+        if(CLOSER.isType(c)){
+            return CLOSER;
+        }
+
         return UNKNOWN;
     }
 
