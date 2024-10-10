@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Stack;
+import java.util.concurrent.locks.Condition;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
@@ -18,8 +19,8 @@ public class Parser {
         reservedIdentifiers.put(new Identifier("string"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("bool"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("if"), IdentifierType.IF);
-        reservedIdentifiers.put(new Identifier("elif"), IdentifierType.IF_FAILURE);
-        reservedIdentifiers.put(new Identifier("else"), IdentifierType.IF_FAILURE);
+        reservedIdentifiers.put(new Identifier("elif"), IdentifierType.ELIF);
+        reservedIdentifiers.put(new Identifier("else"), IdentifierType.ELSE);
         reservedIdentifiers.put(new Identifier("for"), IdentifierType.FOR);
         reservedIdentifiers.put(new Identifier("while"), IdentifierType.WHILE);
         reservedIdentifiers.put(new Identifier("true"), IdentifierType.BOOLEAN);
@@ -29,8 +30,8 @@ public class Parser {
     }
 
     public void run() throws Exception {
+        lexicalAnalyzer.lex();
         while(!lexicalAnalyzer.isEmpty()){
-            lexicalAnalyzer.lex();
             statements();
         }
     }
@@ -63,6 +64,7 @@ public class Parser {
         if(!lexeme.equals(";")){
             throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLineIndex());
         }
+        lexicalAnalyzer.lex();
     }
 
     private String str() throws Exception{
@@ -273,96 +275,42 @@ public class Parser {
     }
 
     private void ifStatement() throws Exception{
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(!lexeme.equals("(")){
-            throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
-        }
-        lexicalAnalyzer.lex();
-        Object resolvedExpression = expression();
-        if(!(resolvedExpression instanceof Boolean)){
-            throw new Exception("Non boolean expression in if condition on line " + lexicalAnalyzer.getLineIndex());
-        }
-
-        lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(!lexeme.equals(")")){
-            throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
-        }
-        lexicalAnalyzer.lex();
-
-        lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(!lexeme.equals("{")){
-            throw new Exception("Invalid if body on line " + lexicalAnalyzer.getLineIndex());
-        }
-
-        Boolean condition = (Boolean) resolvedExpression;
-        boolean ifExecuted = false;
-        if(condition){
-            scope(true);
-            ifExecuted = true;
-        }else{
-            skipChunk();
-        }
-
-        boolean moreStatements = lexicalAnalyzer.lex();
-        if(!moreStatements){
-            return;
-        }
-
-        lexeme = lexicalAnalyzer.getLexeme().strip();
-        while(lexeme.equals("elif")){
-            lexicalAnalyzer.lex();
-            lexeme = lexicalAnalyzer.getLexeme().strip();
-            if(!lexeme.equals("(")){
-                throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
-            }
-            lexicalAnalyzer.lex();
-            Object resolvedElifExpression = expression();
-            if(!(resolvedElifExpression instanceof Boolean)){
-                throw new Exception("Non boolean expression in if condition on line " + lexicalAnalyzer.getLineIndex());
+        Identifier identifier;
+        boolean ifTriggered = false;
+        do{
+            if(!lexicalAnalyzer.getLexeme().strip().equals("(")){
+                throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
             }
 
-            lexeme = lexicalAnalyzer.getLexeme().strip();
-            if(!lexeme.equals(")")){
-                throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
+            lexicalAnalyzer.lex();
+            Object expression = expression();
+
+            if(!(expression instanceof Boolean condition)){
+                throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+            }
+
+            if(!lexicalAnalyzer.getLexeme().strip().equals(")")){
+                throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
             }
             lexicalAnalyzer.lex();
 
-            lexeme = lexicalAnalyzer.getLexeme().strip();
-            if(!lexeme.equals("{")){
-                throw new Exception("Invalid if body on line " + lexicalAnalyzer.getLineIndex());
-            }
-            Boolean elifCondition = (Boolean) resolvedElifExpression;
-            if(elifCondition && !ifExecuted){
-                scope(true);
-                ifExecuted = true;
+            if(ifTriggered || !condition){
+                skipScope();
             }else{
-                skipChunk();
+                ifTriggered = true;
+                scope(true);
             }
-        }
 
-        moreStatements = lexicalAnalyzer.lex();
-        if(!moreStatements){
-            return;
-        }
-        if(!lexicalAnalyzer.getLexeme().strip().equals("else")){
-            return;
-        }
-        lexicalAnalyzer.lex();
-        lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(!lexeme.equals("{")){
-            throw new Exception("Invalid if body on line " + lexicalAnalyzer.getLineIndex());
-        }
-        if(!ifExecuted){
-            scope(true);
-        }else{
-            skipChunk();
-        }
+            if(lexicalAnalyzer.isEmpty()){
+                return;
+            }
+
+            identifier = new Identifier(lexicalAnalyzer.getLexeme().strip());
+        }while(reservedIdentifiers.containsKey(identifier) && reservedIdentifiers.get(identifier).isIfSuccessor());
     }
 
-    private void skipChunk() throws Exception {
-        CharClass tokenType = lexicalAnalyzer.getTokenType();
-
-        if(tokenType != CharClass.OPENER){
+    private void skipScope() throws Exception {
+        if(!lexicalAnalyzer.getLexeme().strip().equals("{")){
             throw new Exception("Improper use of skipChunk on line " + lexicalAnalyzer.getLineIndex());
         }
 
@@ -380,6 +328,7 @@ public class Parser {
                 }
                 closers.pop();
                 if(closers.isEmpty()){
+                    lexicalAnalyzer.lex();
                     break;
                 }
             }
@@ -409,11 +358,8 @@ public class Parser {
         lexicalAnalyzer.lex();
         while(!lexicalAnalyzer.getLexeme().strip().equals("}")){
             statements();
-            if(lexicalAnalyzer.getLexeme().strip().equals(";")){
-                lexicalAnalyzer.lex();
-            }
         }
-
+        lexicalAnalyzer.lex();
         if(increaseScope){
             varMap.decreaseScope();
             reservedIdentifiers.decreaseScope();
