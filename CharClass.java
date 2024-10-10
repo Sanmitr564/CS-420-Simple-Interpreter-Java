@@ -16,7 +16,7 @@ public enum CharClass {
         return c == '+' || c == '-' || c == '/' || c == '*' || c == '%';
     }},
     BOOL_OPERATOR{ public boolean isType(char c){
-        return c == '=' || c == '&' || c == '|' || c == '!';
+        return c == '=' || c == '&' || c == '|' || c == '!' || c == '>' || c == '<';
     }},
     OPENER{
         public boolean isType(char c) { return c == '(' || c == '{' || c == '['; }
