@@ -16,9 +16,13 @@ public class LexicalAnalyzer {
         charIndex = 0;
     }
 
-    public void lex() throws Exception{
+    public boolean lex() throws Exception{
         lexeme = "";
-        getChar();
+        try {
+            getChar();
+        }catch(Exception e){
+            return false;
+        }
 
         while(charClass == CharClass.WHITESPACE){
             addChar();
@@ -28,7 +32,7 @@ public class LexicalAnalyzer {
 
         if(tokenType.isSingle()){
             addChar();
-            return;
+            return true;
         }
 
         do{
@@ -36,10 +40,11 @@ public class LexicalAnalyzer {
             getChar();
         }while(tokenType.isType(nextChar));
 
+        return true;
     }
 
     private void getChar() throws Exception {
-        if(program.isEmpty()){
+        if(isEmpty()){
             throw new Exception("Invalid statement on line " + lineIndex);
         }
         if(program.get(lineIndex).length() == charIndex){
