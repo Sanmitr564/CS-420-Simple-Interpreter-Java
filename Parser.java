@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Stack;
-import java.util.concurrent.locks.Condition;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
@@ -45,29 +44,48 @@ public class Parser {
 
         Identifier identifier = identifier();
         IdentifierType identifierType = reservedIdentifiers.get(identifier);
+
+        if(identifierType.isConditional()){
+            conditional(identifier);
+            return;
+        }
+
+        if(identifierType.isStatement()){
+            statement(identifier);
+            String lexeme = lexicalAnalyzer.getLexeme().strip();
+
+            if(!lexeme.equals(";")){
+                throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLineIndex());
+            }
+
+            lexicalAnalyzer.lex();
+            return;
+        }
+
+        throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLineIndex());
+    }
+
+    private void statement(Identifier identifier) throws Exception{
+        IdentifierType identifierType = reservedIdentifiers.get(identifier);
+
         if(identifierType == IdentifierType.METHOD){
             methodCall(identifier);
         }else if(identifierType == IdentifierType.TYPE_DECLARATION){
             declareVar(identifier);
         }else if(identifierType == IdentifierType.VAR){
             assignVar(identifier);
-        }else if(identifierType == IdentifierType.IF){
+        }
+    }
+
+    private void conditional(Identifier identifier) throws Exception{
+        IdentifierType identifierType = reservedIdentifiers.get(identifier);
+        if(identifierType == IdentifierType.IF){
             ifStatement();
-            return;
         }else if(identifierType == IdentifierType.WHILE){
             whileLoop();
-            return;
+        }else if(identifierType == IdentifierType.FOR){
+            forLoop();
         }
-        else{
-            throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLineIndex());
-        }
-
-        String lexeme = lexicalAnalyzer.getLexeme().strip();
-
-        if(!lexeme.equals(";")){
-            throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLineIndex());
-        }
-        lexicalAnalyzer.lex();
     }
 
     private String str() throws Exception{
@@ -384,7 +402,7 @@ public class Parser {
 
     private void whileLoop() throws Exception{
         if(!lexicalAnalyzer.getLexeme().strip().equals("(")){
-            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+            throw new Exception("Improper while condition on line " + lexicalAnalyzer.getLineIndex());
         }
         int lineIndex = lexicalAnalyzer.getLineIndex();
         int charIndex = lexicalAnalyzer.getCharIndex();
@@ -393,11 +411,11 @@ public class Parser {
         Object expression = expression();
 
         if(!(expression instanceof Boolean)){
-            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+            throw new Exception("Improper while condition on line " + lexicalAnalyzer.getLineIndex());
         }
 
         if(!lexicalAnalyzer.getLexeme().strip().equals(")")){
-            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+            throw new Exception("Improper while condition on line " + lexicalAnalyzer.getLineIndex());
         }
         lexicalAnalyzer.lex();
         Boolean condition = (Boolean) expression;
@@ -412,4 +430,86 @@ public class Parser {
         skipScope();
     }
 
+    private void forLoop() throws Exception{
+        varMap.increaseScope();
+        reservedIdentifiers.increaseScope();
+
+        if(!lexicalAnalyzer.getLexeme().strip().equals("(")){
+            throw new Exception("Improper for header on line " + lexicalAnalyzer.getLineIndex());
+        }
+        lexicalAnalyzer.lex();
+        statement(identifier());
+
+        if(!lexicalAnalyzer.getLexeme().strip().equals(";")){
+            throw new Exception("Improper for header on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        int conditionLineIndex = lexicalAnalyzer.getLineIndex();
+        int conditionCharIndex = lexicalAnalyzer.getCharIndex();
+
+        lexicalAnalyzer.lex();
+        Object expression = expression();
+        if(!(expression instanceof Boolean)){
+            throw new Exception("Improper for condition on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        if(!lexicalAnalyzer.getLexeme().strip().equals(";")){
+            throw new Exception("Improper for header on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        int adjustmentLineIndex = lexicalAnalyzer.getLineIndex();
+        int adjustmentCharIndex = lexicalAnalyzer.getCharIndex();
+
+        lexicalAnalyzer.lex();
+
+        if(lexicalAnalyzer.getTokenType() != CharClass.IDENTIFIER){
+            throw new Exception("Improper for header on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        skipToSingle(')');
+
+        int scopeStartLineIndex = lexicalAnalyzer.getLineIndex();
+        int scopeStartCharIndex = lexicalAnalyzer.getCharIndex();
+
+        lexicalAnalyzer.lex();
+
+        Boolean condition = (Boolean) expression;
+
+        while(condition){
+            scope(false);
+            lexicalAnalyzer.goTo(adjustmentLineIndex, adjustmentCharIndex);
+            lexicalAnalyzer.lex();
+            statement(identifier());
+            lexicalAnalyzer.goTo(conditionLineIndex, conditionCharIndex);
+            lexicalAnalyzer.lex();
+            condition = (Boolean) expression();
+            lexicalAnalyzer.goTo(scopeStartLineIndex, scopeStartCharIndex);
+            lexicalAnalyzer.lex();
+        }
+
+        skipScope();
+        varMap.decreaseScope();
+        reservedIdentifiers.decreaseScope();
+    }
+
+    private void skipToSingle(char c) throws Exception{
+        Stack<Character> closers = new Stack<>();
+
+        while(true){
+            if(lexicalAnalyzer.getTokenType() == CharClass.DOUBLE_QUOTE){
+                str();
+                continue;
+            }else if(lexicalAnalyzer.getTokenType() == CharClass.OPENER){
+                closers.push(getCloser(lexicalAnalyzer.getLexeme().charAt(0)));
+            }else if(lexicalAnalyzer.getTokenType() == CharClass.CLOSER && !closers.isEmpty()){
+                if(lexicalAnalyzer.getLexeme().strip().charAt(0) != closers.peek()){
+                    throw new Exception("Improper statement on line " + lexicalAnalyzer.getLineIndex());
+                }
+                closers.pop();
+            }else if(lexicalAnalyzer.getLexeme().strip().charAt(0) == c){
+                break;
+            }
+            lexicalAnalyzer.lex();
+        }
+    }
 }
