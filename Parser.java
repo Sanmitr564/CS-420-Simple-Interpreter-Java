@@ -1,4 +1,5 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Stack;
 
 public class Parser {
     private final LexicalAnalyzer lexicalAnalyzer;
@@ -17,13 +18,14 @@ public class Parser {
         reservedIdentifiers.put(new Identifier("string"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("bool"), IdentifierType.TYPE_DECLARATION);
         reservedIdentifiers.put(new Identifier("if"), IdentifierType.IF);
+        reservedIdentifiers.put(new Identifier("elif"), IdentifierType.IF_FAILURE);
+        reservedIdentifiers.put(new Identifier("else"), IdentifierType.IF_FAILURE);
         reservedIdentifiers.put(new Identifier("for"), IdentifierType.FOR);
         reservedIdentifiers.put(new Identifier("while"), IdentifierType.WHILE);
         reservedIdentifiers.put(new Identifier("true"), IdentifierType.BOOLEAN);
         reservedIdentifiers.put(new Identifier("false"), IdentifierType.BOOLEAN);
-        reservedIdentifiers.put(new Identifier("elif"), IdentifierType.ELIF);
-        reservedIdentifiers.put(new Identifier("else"), IdentifierType.ELSE);
-
+        reservedIdentifiers.lockInitialScope();
+        reservedIdentifiers.increaseScope();
     }
 
     public void run() throws Exception {
@@ -39,7 +41,6 @@ public class Parser {
         if(tokenType != CharClass.IDENTIFIER){
             throw new Exception("Invalid statement on line " + lexicalAnalyzer.getLineIndex());
         }
-        String expectedEnder = ";";
 
         Identifier identifier = identifier();
         IdentifierType identifierType = reservedIdentifiers.get(identifier);
@@ -51,14 +52,15 @@ public class Parser {
             assignVar(identifier);
         }else if(identifierType == IdentifierType.IF){
             ifStatement();
-            expectedEnder = "}";
+            return;
         }
         else{
             throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLineIndex());
         }
 
         String lexeme = lexicalAnalyzer.getLexeme().strip();
-        if(!lexeme.equals(expectedEnder)){
+
+        if(!lexeme.equals(";")){
             throw new Exception("Missing semicolon on line " + lexicalAnalyzer.getLineIndex());
         }
     }
@@ -293,7 +295,64 @@ public class Parser {
         }
 
         Boolean condition = (Boolean) resolvedExpression;
+        boolean ifExecuted = false;
         if(condition){
+            scope(true);
+            ifExecuted = true;
+        }else{
+            skipChunk();
+        }
+
+        boolean moreStatements = lexicalAnalyzer.lex();
+        if(!moreStatements){
+            return;
+        }
+
+        lexeme = lexicalAnalyzer.getLexeme().strip();
+        while(lexeme.equals("elif")){
+            lexicalAnalyzer.lex();
+            lexeme = lexicalAnalyzer.getLexeme().strip();
+            if(!lexeme.equals("(")){
+                throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
+            }
+            lexicalAnalyzer.lex();
+            Object resolvedElifExpression = expression();
+            if(!(resolvedElifExpression instanceof Boolean)){
+                throw new Exception("Non boolean expression in if condition on line " + lexicalAnalyzer.getLineIndex());
+            }
+
+            lexeme = lexicalAnalyzer.getLexeme().strip();
+            if(!lexeme.equals(")")){
+                throw new Exception("Invalid if condition on line " + lexicalAnalyzer.getLineIndex());
+            }
+            lexicalAnalyzer.lex();
+
+            lexeme = lexicalAnalyzer.getLexeme().strip();
+            if(!lexeme.equals("{")){
+                throw new Exception("Invalid if body on line " + lexicalAnalyzer.getLineIndex());
+            }
+            Boolean elifCondition = (Boolean) resolvedElifExpression;
+            if(elifCondition && !ifExecuted){
+                scope(true);
+                ifExecuted = true;
+            }else{
+                skipChunk();
+            }
+        }
+
+        moreStatements = lexicalAnalyzer.lex();
+        if(!moreStatements){
+            return;
+        }
+        if(!lexicalAnalyzer.getLexeme().strip().equals("else")){
+            return;
+        }
+        lexicalAnalyzer.lex();
+        lexeme = lexicalAnalyzer.getLexeme().strip();
+        if(!lexeme.equals("{")){
+            throw new Exception("Invalid if body on line " + lexicalAnalyzer.getLineIndex());
+        }
+        if(!ifExecuted){
             scope(true);
         }else{
             skipChunk();
@@ -350,7 +409,9 @@ public class Parser {
         lexicalAnalyzer.lex();
         while(!lexicalAnalyzer.getLexeme().strip().equals("}")){
             statements();
-            lexicalAnalyzer.lex();
+            if(lexicalAnalyzer.getLexeme().strip().equals(";")){
+                lexicalAnalyzer.lex();
+            }
         }
 
         if(increaseScope){
