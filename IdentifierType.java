@@ -11,15 +11,15 @@ public enum IdentifierType {
     WHILE,
     BOOLEAN;
 
-    public static final EnumSet<IdentifierType> ifTypes = EnumSet.of(IF, ELIF, ELSE);
+    public static final EnumSet<IdentifierType> statementStarter = EnumSet.of(TYPE_DECLARATION, VAR, METHOD);
 
-    public static final EnumSet<IdentifierType> ifSuccessors = EnumSet.of(ELIF, ELSE);
+    public static final EnumSet<IdentifierType> conditionalStarter = EnumSet.of(IF, FOR, WHILE);
 
-    public boolean isIfType(){
-        return ifTypes.contains(this);
+    public boolean isStatement(){
+        return statementStarter.contains(this);
     }
 
-    public boolean isIfSuccessor(){
-        return ifSuccessors.contains(this);
+    public boolean isConditional(){
+        return conditionalStarter.contains(this);
     }
 }
