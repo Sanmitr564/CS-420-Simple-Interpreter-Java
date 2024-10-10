@@ -54,6 +54,9 @@ public class Parser {
         }else if(identifierType == IdentifierType.IF){
             ifStatement();
             return;
+        }else if(identifierType == IdentifierType.WHILE){
+            whileLoop();
+            return;
         }
         else{
             throw new Exception("Unknown identifier on line " + lexicalAnalyzer.getLineIndex());
@@ -236,7 +239,7 @@ public class Parser {
         }
         Identifier name = identifier();
 
-        if(reservedIdentifiers.keyReserved(name)){
+        if(reservedIdentifiers.containsKey(name)){
             throw new Exception("Tried to create variable from reserved identifier on line " + lexicalAnalyzer.getLineIndex());
         }
 
@@ -278,6 +281,10 @@ public class Parser {
         Identifier identifier;
         boolean ifTriggered = false;
         do{
+            if(reservedIdentifiers.containsKey(new Identifier(lexicalAnalyzer.getLexeme())) && reservedIdentifiers.get(new Identifier(lexicalAnalyzer.getLexeme())) == IdentifierType.ELIF){
+                lexicalAnalyzer.lex();
+            }
+
             if(!lexicalAnalyzer.getLexeme().strip().equals("(")){
                 throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
             }
@@ -306,7 +313,16 @@ public class Parser {
             }
 
             identifier = new Identifier(lexicalAnalyzer.getLexeme().strip());
-        }while(reservedIdentifiers.containsKey(identifier) && reservedIdentifiers.get(identifier).isIfSuccessor());
+        }while(reservedIdentifiers.containsKey(identifier) && reservedIdentifiers.get(identifier) == IdentifierType.ELIF);
+
+        if(reservedIdentifiers.containsKey(identifier) && reservedIdentifiers.get(identifier) == IdentifierType.ELSE){
+            lexicalAnalyzer.lex();
+            if(ifTriggered){
+                skipScope();
+            }else{
+                scope(true);
+            }
+        }
     }
 
     private void skipScope() throws Exception {
@@ -365,4 +381,35 @@ public class Parser {
             reservedIdentifiers.decreaseScope();
         }
     }
+
+    private void whileLoop() throws Exception{
+        if(!lexicalAnalyzer.getLexeme().strip().equals("(")){
+            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+        }
+        int lineIndex = lexicalAnalyzer.getLineIndex();
+        int charIndex = lexicalAnalyzer.getCharIndex();
+
+        lexicalAnalyzer.lex();
+        Object expression = expression();
+
+        if(!(expression instanceof Boolean)){
+            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+        }
+
+        if(!lexicalAnalyzer.getLexeme().strip().equals(")")){
+            throw new Exception("Improper if condition on line " + lexicalAnalyzer.getLineIndex());
+        }
+        lexicalAnalyzer.lex();
+        Boolean condition = (Boolean) expression;
+
+        while(condition){
+            scope(true);
+            lexicalAnalyzer.goTo(lineIndex, charIndex);
+            lexicalAnalyzer.lex();
+            condition = (Boolean) expression();
+            lexicalAnalyzer.lex();
+        }
+        skipScope();
+    }
+
 }
