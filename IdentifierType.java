@@ -3,8 +3,7 @@ public enum IdentifierType {
     VAR,
     METHOD,
     IF,
-    ELIF,
-    ELSE,
+    IF_FAILURE,
     FOR,
     WHILE,
     BOOLEAN
