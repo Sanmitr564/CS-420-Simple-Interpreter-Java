@@ -44,6 +44,12 @@ public class ScopeList<E> extends ArrayList<HashMap<Identifier, E>> {
         if(initialScopeLocked && get(0).containsKey(key)){
             throw new Exception("Reserved identifier");
         }
+        for(int i = size() - 1; i >= 0; i--){
+            Map<Identifier, E> map = get(i);
+            if(map.containsKey(key)){
+                return map.put(key,value);
+            }
+        }
         return get(size() - 1).put(key, value);
     }
 
