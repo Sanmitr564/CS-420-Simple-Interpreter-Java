@@ -323,7 +323,7 @@ public class Parser {
                 skipScope();
             }else{
                 ifTriggered = true;
-                scope(true);
+                scope();
             }
 
             if(lexicalAnalyzer.isEmpty()){
@@ -338,7 +338,7 @@ public class Parser {
             if(ifTriggered){
                 skipScope();
             }else{
-                scope(true);
+                scope();
             }
         }
     }
@@ -367,7 +367,7 @@ public class Parser {
                 }
             }
             lexicalAnalyzer.lex();
-        };
+        }
     }
 
     private char getCloser(char c) throws Exception{
@@ -380,11 +380,10 @@ public class Parser {
         throw new Exception("Not an opener");
     }
 
-    private void scope(boolean increaseScope) throws Exception{
-        if(increaseScope){
-            varMap.increaseScope();
-            reservedIdentifiers.increaseScope();
-        }
+    private void scope() throws Exception{
+        varMap.increaseScope();
+        reservedIdentifiers.increaseScope();
+
         String lexeme = lexicalAnalyzer.getLexeme().strip();
         if(!lexeme.equals("{")){
             throw new Exception("Improper scope on line " + lexicalAnalyzer.getLineIndex());
@@ -394,10 +393,8 @@ public class Parser {
             statements();
         }
         lexicalAnalyzer.lex();
-        if(increaseScope){
-            varMap.decreaseScope();
-            reservedIdentifiers.decreaseScope();
-        }
+        varMap.decreaseScope();
+        reservedIdentifiers.decreaseScope();
     }
 
     private void whileLoop() throws Exception{
@@ -421,7 +418,7 @@ public class Parser {
         Boolean condition = (Boolean) expression;
 
         while(condition){
-            scope(true);
+            scope();
             lexicalAnalyzer.goTo(lineIndex, charIndex);
             lexicalAnalyzer.lex();
             condition = (Boolean) expression();
@@ -476,7 +473,7 @@ public class Parser {
         Boolean condition = (Boolean) expression;
 
         while(condition){
-            scope(false);
+            scope();
             lexicalAnalyzer.goTo(adjustmentLineIndex, adjustmentCharIndex);
             lexicalAnalyzer.lex();
             statement(identifier());
